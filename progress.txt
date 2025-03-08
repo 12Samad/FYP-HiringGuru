@@ -1,0 +1,7 @@
+Login + signup -> Done alongside Database configuration(entry) and Authentication (bycrypt).
+Interview cards -> Done alongisde linked pages
+Interview Form -> Done & All interview data is being stored in MongoDB.
+
+Left With?
+All sub - pages.
+Dashboard when model returns report data.

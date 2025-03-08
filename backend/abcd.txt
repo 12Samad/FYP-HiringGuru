@@ -1,0 +1,19 @@
+singup curl:
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/signup" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{
+    "name": "John Doe",
+    "email": "johndoe@example.com",
+    "password": "password123"
+}'
+response:
+"name": "John Doe",    "email": "johndoe@example.com",    "password": "password123"}'
+
+message
+-------
+User registered successfully
+
+login curl:
+PS D:\Hiring-Guru\backend> Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method Post -Headers @{"Content-Type"="application/json"} -Body '{    "email": "johndoe@example.com",    "password": "password123"}'
+
+message
+-------
+Login successful
