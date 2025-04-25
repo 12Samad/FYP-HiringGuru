@@ -1,0 +1,71 @@
+\documentclass{fast-nuces-bs}
+
+\usepackage{blindtext}
+\usepackage{mathptmx}% Times Roman font
+\usepackage[T1]{fontenc}
+\usepackage{lipsum} 
+\usepackage{sectsty}
+\usepackage{tikz-uml}
+\usepackage{titlesec}
+
+% Information about the Thesis 
+% -----------------------------------------------------------------------------
+% (All are compulsory, do not delete any line other than author Information)
+% For e.g., usually there are 3 students in a group, so leave authorone, 
+% authortwo, and authorthree, and delete authorfour.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\department{Department of Computer Science}
+\faculty{Computer Science}
+\degreeyear{2025}
+\degreemonth{June}
+\degreename{Computer Science}
+\campuscity{Peshawar}
+\authorone{Muhammad Ayan Shabbir}{21P-8035}
+\authortwo{Abdus Samad Kaleem}{21P-8011}
+\authorthree{Sher Ali}{21P-8024}
+\supervisor{Dr. Muhammad Amin}
+\sessionduration{2021-2025}
+% \cosupervisor{Mr./ Ms./ Dr. Supervisor Name}
+% \deanname{Dr. Dean Computing}
+\directorname{Dr. Omar Usman}
+\hodname{Mr. Fazl e Basit}
+\fypcoordinatorname{Mr. Haroon Zafar}
+\title{HiringGuru: AI Career Assistance & Real-Time
+Interview Feedback}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Former document starts below this
+\begin{document}
+
+\begin{acknowledgements}
+	Your acknowledgments here
+\end{acknowledgements}
+
+\begin{abstract}
+The research addresses the problem of limited tools for effective interview preparation, particularly in providing personalized feedback on non-verbal cues like posture and facial expressions. Job candidates often struggle to gauge their performance in terms of both content and demeanor, a challenge that standard mock interview platforms do not fully address. This project introduces an AI-driven application designed to simulate real-world interview conditions, capturing and analyzing users’ facial expressions, posture, and responses in real-time. The application utilizes deep learning techniques for posture detection and natural language processing to assess user answers. The methodology includes implementing machine learning models for expression and posture recognition, paired with a feedback algorithm to generate an in-depth performance report.
+
+Key results demonstrate that users gain improved self-awareness in interview scenarios, with early testing showing a measurable boost in posture awareness and response confidence. However, limitations in real-time processing under certain network conditions were identified. In conclusion, this AI-powered interview simulator provides a novel approach to interview practice, enhancing both verbal and non-verbal skills through targeted feedback. Further improvements in processing efficiency and customization could expand its applicability across various professional fields.
+\end{abstract}
+
+\include{sections/chapter1}
+\include{sections/chapter2}
+\include{sections/chapter3}
+\include{sections/chapter4}
+\include{sections/chapter5}
+\include{sections/chapter6}
+\include{sections/chapter7}
+\include{sections/chapter8}
+\include{sections/chapter9}
+\include{sections/chapter10}
+\include{sections/chapter11}
+\include{sections/conclusions}
+
+%\appendix
+%\include{appendix1/appendix1}
+
+\bibliographystyle{plain}
+\bibliography{bib} 
+\addcontentsline{toc}{chapter}{References} 
+
+\end{document}

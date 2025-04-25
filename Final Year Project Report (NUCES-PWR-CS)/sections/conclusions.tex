@@ -1,0 +1,36 @@
+\chapter{Conclusions and Future Work}
+\label{ch:conclusions}
+
+This chapter summarizes the key outcomes of the HiringGuru project, a real-time mock interview platform designed to enhance job candidates’ preparation through AI-driven feedback. It reflects on the system’s achievements, limitations, and potential avenues for future development.
+
+\section{Conclusions}
+HiringGuru successfully addresses the challenge of limited tools for effective interview preparation, particularly in providing personalized feedback on non-verbal cues. By integrating advanced AI technologies, including MobileNetV2 for posture detection (achieving 90\% accuracy) \cite{howard2018mobilenetv2}, Haarcascade for facial expression analysis \cite{viola2001haar}, Dlib for eye tracking \cite{king2009dlib}, and the OpenAI API for contextually relevant question generation \cite{openai2023api}, the platform delivers a realistic and immersive interview simulation. The system’s layered architecture, built with Next.js \cite{vercel2023nextjs}, Node.js, TensorFlow, and Firebase \cite{firebase2023docs}, ensures modularity, scalability, and real-time performance.
+
+Key achievements include:
+\begin{itemize}
+    \item \textbf{Personalized Feedback}: Users receive comprehensive reports on posture, facial expressions, eye contact, and response quality, improving self-awareness and interview skills \cite{hufford2020interview}.
+    \item \textbf{Real-Time Analysis}: The AI-driven pipeline, enhanced by MediaPipe \cite{lugaresi2019mediapipe}, processes webcam input efficiently, enabling immediate feedback during mock interviews.
+    \item \textbf{User-Friendly Interface}: The Next.js frontend with TailwindCSS provides an intuitive experience for job candidates and administrators.
+    \item \textbf{Robust Implementation}: Extensive unit, integration, and system-level testing validated the platform’s reliability, with performance tests confirming scalability for up to 1,000 concurrent users.
+\end{itemize}
+
+Early testing demonstrated measurable improvements in users’ posture awareness and response confidence, fulfilling the project’s primary objective of enhancing interview preparation. The implementation aligns with design goals, leveraging a modular architecture and optimized algorithms to deliver a cohesive user experience.
+
+However, certain limitations were identified. Real-time processing occasionally faces challenges under poor network conditions, leading to delays in analysis. Additionally, the system’s reliance on high-quality webcam input can affect accuracy in suboptimal lighting or hardware setups. These constraints highlight areas for further refinement.
+
+\section{Future Work}
+To build on HiringGuru’s foundation, several enhancements are proposed:
+\begin{itemize}
+    \item \textbf{Improved Real-Time Processing}: Optimize the AI analysis pipeline to reduce latency under varying network conditions, potentially by implementing edge computing for local processing.
+    \item \textbf{Enhanced Robustness}: Develop adaptive algorithms to maintain accuracy in diverse lighting and hardware environments, such as low-resolution webcams.
+    \item \textbf{Mobile Application}: Create a mobile app version of HiringGuru to increase accessibility, leveraging native device cameras and microphones.
+    \item \textbf{Advanced Feedback Customization}: Introduce user-configurable feedback options, allowing candidates to prioritize specific skills (e.g., posture over verbal responses) based on job requirements.
+    \item \textbf{Multilingual Support}: Integrate natural language processing models to support question generation and response analysis in multiple languages, broadening the platform’s global applicability.
+    \item \textbf{Gamification Features}: Incorporate progress tracking, badges, and performance metrics to enhance user engagement and motivation.
+    \item \textbf{Integration with Job Platforms}: Partner with job boards or recruitment platforms to tailor interview questions to specific job postings, increasing relevance for users.
+\end{itemize}
+
+These improvements aim to enhance HiringGuru’s performance, accessibility, and applicability across diverse professional fields. By addressing current limitations and expanding functionality, the platform can further empower job candidates and streamline interview preparation.
+
+\section{Summary}
+HiringGuru represents a novel approach to interview preparation, combining AI-driven analysis with a user-centric design to deliver actionable feedback. The project successfully meets its objectives, providing a scalable and reliable platform that enhances verbal and non-verbal skills. While limitations in real-time processing and hardware dependency exist, the proposed future work offers a clear path for refinement. This work lays a strong foundation for advancing AI applications in professional development, with potential to transform how candidates prepare for interviews.

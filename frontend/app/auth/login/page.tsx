@@ -14,17 +14,21 @@ export default function Login() {
     email: "",
     password: "",
   })
-  const [message, setMessage] = useState(""); // ✅ Define the state
+  const [message, setMessage] = useState("") // Define the state
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [debugInfo, setDebugInfo] = useState("") // Debug state
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setMessage("") // Reset message before new attempt
+    setDebugInfo("") // Reset debug info
     setIsLoading(true)
 
     try {
+      console.log("Sending login request to server with email:", formData.email)
+      
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: {
@@ -34,9 +38,52 @@ export default function Login() {
       })
 
       const data = await response.json()
+      
+      // Debug: Log the full response data
+      console.log("Full server response:", data)
+      setDebugInfo(JSON.stringify(data, null, 2))
 
       if (response.ok) {
-        setMessage("✅ Welcome back! Redirecting to test..."); // ✅ Now displayed
+        // Look for possible userId field variants
+        const possibleUserIdFields = ['userId', 'user_id', 'id', 'uid', '_id'];
+        let foundUserId = null;
+        
+        // Check for different field names
+        for (const field of possibleUserIdFields) {
+          if (data[field] !== undefined) {
+            foundUserId = data[field];
+            console.log(`Found user ID in field "${field}":`, foundUserId);
+            break;
+          }
+        }
+        
+        // Check if userId might be nested inside a user object
+        if (!foundUserId && data.user) {
+          for (const field of possibleUserIdFields) {
+            if (data.user[field] !== undefined) {
+              foundUserId = data.user[field];
+              console.log(`Found user ID in nested field "user.${field}":`, foundUserId);
+              break;
+            }
+          }
+        }
+        
+        // Store user ID if found
+        if (foundUserId) {
+          localStorage.setItem('userId', foundUserId);
+          console.log("User ID stored in localStorage:", foundUserId);
+          
+          // You can also store other user info if needed
+          if (data.name) localStorage.setItem('userName', data.name);
+          if (data.user?.name) localStorage.setItem('userName', data.user.name);
+          
+          if (data.email) localStorage.setItem('userEmail', data.email);
+          if (data.user?.email) localStorage.setItem('userEmail', data.user.email);
+        } else {
+          console.warn("User ID not received from server in any expected field");
+        }
+        
+        setMessage("✅ Welcome back! Redirecting..."); 
 
         setTimeout(() => {
           router.push("/interview-setup"); // Redirect after delay
@@ -45,6 +92,7 @@ export default function Login() {
         setError(data.message || "Invalid credentials")
       }
     } catch (err) {
+      console.error("Login error:", err);
       setError("Failed to connect to the server")
     } finally {
       setIsLoading(false)
@@ -59,11 +107,19 @@ export default function Login() {
           <p className="mt-2 text-gray-400">Sign in to continue your preparation</p>
         </div>
 
-        {/* ✅ Display Success Message */}
+        {/* Display Success Message */}
         {message && <div className="rounded-md bg-green-500/10 p-4 text-center text-green-500">{message}</div>}
 
-        {/* ✅ Display Error Message */}
+        {/* Display Error Message */}
         {error && <div className="rounded-md bg-red-500/10 p-4 text-center text-red-500">{error}</div>}
+
+        {/* Debug Info - Can be removed in production */}
+        {/* {debugInfo && (
+          <div className="rounded-md bg-gray-800/50 p-4 text-xs text-gray-400 overflow-auto max-h-40">
+            <p className="font-bold mb-1">Debug - Server Response:</p>
+            <pre>{debugInfo}</pre>
+          </div>
+        )} */}  
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="space-y-4">

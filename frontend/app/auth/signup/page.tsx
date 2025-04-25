@@ -16,7 +16,7 @@ export default function SignUp() {
     email: "",
     password: "",
   })
-  const [message, setMessage] = useState(""); // ✅ Success message state
+  const [message, setMessage] = useState("") // Success message state
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -37,10 +37,22 @@ export default function SignUp() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage("✅ Account created successfully! Redirecting..."); // ✅ Show success message
+        // Store user ID in localStorage
+        if (data.userId) {
+          localStorage.setItem('userId', data.userId);
+          console.log("User ID stored in localStorage:", data.userId);
+          
+          // You can also store other user info if  needed
+          localStorage.setItem('userName', formData.name);
+          localStorage.setItem('userEmail', formData.email);
+        } else {
+          console.warn("User ID not received from server");
+        }
+        
+        setMessage("✅ Account created successfully! Redirecting..."); // Show success message
 
         setTimeout(() => {
-          router.push("/interview-setup"); // ✅ Redirect after delay
+          router.push("/interview-setup"); // Redirect after delay
         }, 2000);
       } else {
         setError(data.message || "Something went wrong")
@@ -61,7 +73,7 @@ export default function SignUp() {
         </div>
 
         {error && <div className="rounded-md bg-red-500/10 p-4 text-center text-red-500">{error}</div>}
-        {message && <div className="rounded-md bg-green-500/10 p-4 text-center text-green-500">{message}</div>} {/* ✅ Show success message */}
+        {message && <div className="rounded-md bg-green-500/10 p-4 text-center text-green-500">{message}</div>} {/* Show success message */}
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="space-y-4">

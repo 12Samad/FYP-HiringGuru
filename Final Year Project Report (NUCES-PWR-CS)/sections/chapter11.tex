@@ -1,0 +1,118 @@
+\chapter{User Manual}
+\label{ch:manual}
+
+This chapter provides a comprehensive user manual for HiringGuru, a real-time mock interview platform designed to enhance interview preparation through AI-driven feedback. The manual guides users (job candidates) and administrators on system setup, usage, and troubleshooting, ensuring a seamless experience.
+
+\section{Introduction}
+HiringGuru simulates real-world interview scenarios, analyzing verbal responses, posture, facial expressions, and eye contact using advanced AI models (MobileNetV2, MediaPipe, Haarcascade, Dlib). Users receive personalized feedback to improve their performance, while administrators manage question banks and system settings. This manual covers system requirements, setup, and step-by-step instructions for both user types.
+
+\section{System Requirements}
+To use HiringGuru, ensure the following:
+\begin{itemize}
+    \item \textbf{Hardware}: A computer with a webcam (minimum 720p resolution), microphone, and speakers.
+    \item \textbf{Operating System}: Windows 10/11, macOS 10.15+, or Ubuntu 20.04+.
+    \item \textbf{Browser}: Google Chrome or Firefox (latest versions).
+    \item \textbf{Internet}: Stable connection with at least 5 Mbps download/upload speed.
+    \item \textbf{Dependencies} (for local setup): Node.js (v16+), Python (v3.8+), and Firebase CLI.
+\end{itemize}
+
+\section{Installation and Setup}
+HiringGuru is accessible via a web interface, with optional local setup for advanced users or administrators.
+
+\subsection{Web-Based Access}
+\begin{enumerate}
+    \item Visit the HiringGuru website (URL provided by the deployment team).
+    \item Sign up using an email address or log in with existing credentials via Firebase Authentication.
+    \item Grant browser permissions for webcam and microphone access when prompted.
+\end{enumerate}
+
+\subsection{Local Setup (Optional)}
+For developers or administrators:
+\begin{enumerate}
+    \item Clone the repository: \url{https://github.com/12Samad/FYP-HiringGuru}.
+    \item Install dependencies:
+        \begin{itemize}
+            \item Run \texttt{npm install} in the \texttt{frontend} and \texttt{backend} directories.
+            \item Install Python packages: \texttt{pip install tensorflow opencv-python mediapipe dlib}.
+        \end{itemize}
+    \item Configure environment variables:
+        \begin{itemize}
+            \item Set Firebase credentials in \texttt{.env} (e.g., API key, database URL).
+            \item Add OpenAI API key for question generation.
+        \end{itemize}
+    \item Start the application:
+        \begin{itemize}
+            \item Run \texttt{npm run dev} in the \texttt{frontend} directory for the Next.js app.
+            \item Run \texttt{node server.js} in the \texttt{backend} directory for the Node.js server.
+        \end{itemize}
+    \item Access the application at \texttt{http://localhost:3000}.
+\end{enumerate}
+
+\section{Using HiringGuru}
+This section outlines how to use HiringGuru as a job candidate or administrator.
+
+\subsection{Job Candidate Workflow}
+\begin{enumerate}
+    \item \textbf{Log In}: Access the platform using your email and password.
+    \item \textbf{Start Interview}:
+        \begin{itemize}
+            \item Select a job role or interview type (e.g., software engineering, management).
+            \item Click ``Start Interview'' to begin the session.
+        \end{itemize}
+    \item \textbf{Participate in the Interview}:
+        \begin{itemize}
+            \item Ensure your webcam and microphone are active.
+            \item Answer questions delivered via text or text-to-speech (Python TTS).
+            \item The system analyzes posture, facial expressions, and eye contact in real-time.
+        \end{itemize}
+    \item \textbf{Receive Feedback}:
+        \begin{itemize}
+            \item After the session, view a detailed report on posture (90\% accuracy via MobileNetV2), facial expressions (Haarcascade), eye contact (Dlib), and response quality.
+            \item Review suggestions for improvement.
+        \end{itemize}
+    \item \textbf{Repeat Sessions}: Practice multiple sessions to track progress.
+\end{enumerate}
+
+\subsection{Administrator Workflow}
+\begin{enumerate}
+    \item \textbf{Log In}: Use admin credentials to access the dashboard.
+    \item \textbf{Manage Questions}:
+        \begin{itemize}
+            \item Add, edit, or remove questions in the OpenAI API question bank.
+            \item Categorize questions by job role or difficulty.
+        \end{itemize}
+    \item \textbf{Monitor System}:
+        \begin{itemize}
+            \item View usage statistics and user session logs in Firebase.
+            \item Ensure AI models (TensorFlow, MediaPipe) are operational.
+        \end{itemize}
+    \item \textbf{Update Settings}: Adjust system parameters, such as feedback thresholds or analysis frequency.
+\end{enumerate}
+
+\section{Troubleshooting}
+Common issues and solutions:
+\begin{itemize}
+    \item \textbf{Webcam Not Detected}:
+        \begin{itemize}
+            \item Ensure the webcam is connected and permissions are granted.
+            \item Try a different browser or update drivers.
+        \end{itemize}
+    \item \textbf{Poor Analysis Accuracy}:
+        \begin{itemize}
+            \item Ensure proper lighting and minimal background noise.
+            \item Position the webcam at eye level for optimal posture and facial detection.
+        \end{itemize}
+    \item \textbf{Login Issues}:
+        \begin{itemize}
+            \item Verify email and password or use the ``Forgot Password'' feature.
+            \item Check Firebase Authentication status for outages.
+        \end{itemize}
+    \item \textbf{Slow Performance}:
+        \begin{itemize}
+            \item Confirm internet speed meets requirements.
+            \item Close unnecessary applications to free system resources.
+        \end{itemize}
+\end{itemize}
+
+\section{Summary}
+This user manual provides clear instructions for using HiringGuru, covering setup, operation, and troubleshooting for job candidates and administrators. By following these steps, users can effectively leverage the platform’s AI-driven feedback to enhance their interview skills.
