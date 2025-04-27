@@ -26,11 +26,14 @@ interface FacialExpressionProps {
 
 const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, onPostureUpdate }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [expression, setExpression] = useState<string>("");
     const [posture, setPosture] = useState<string>("");
     const [isWebcamActive, setIsWebcamActive] = useState<boolean>(false);
     const [userId, setUserId] = useState<string>("guest_user");
     const postureIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const emotionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const lastEmotionRef = useRef<string | null>(null);
     
     // Get userId from localStorage - This is key to fixing the issue
     useEffect(() => {
@@ -122,6 +125,11 @@ const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, on
                 clearInterval(postureIntervalRef.current);
                 postureIntervalRef.current = null;
             }
+
+            if (emotionIntervalRef.current) {
+                clearInterval(emotionIntervalRef.current);
+                emotionIntervalRef.current = null;
+            }
         };
     }, []);
 
@@ -194,56 +202,68 @@ const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, on
         }
     };
     
-    // Simulate emotion detection for reliable testing
-    useEffect(() => {
-        if (!isWebcamActive) return;
-
-        // Simulate initial "analyzing" period
-        const emotions = ["neutral", "happy", "surprised", "neutral", "happy"];
-        let currentIndex = 0;
-
-        // Update with an emotion after 2 seconds (simulates initial detection)
-        const initialTimeout = setTimeout(() => {
-            const initialEmotion = "neutral";
-            setExpression(initialEmotion);
+    // Process emotions using backend ML approach
+    const analyzeEmotion = async () => {
+        if (!videoRef.current || !isWebcamActive) return;
+        
+        try {
+            // Create canvas to capture video frame
+            const canvas = document.createElement('canvas');
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            const ctx = canvas.getContext('2d');
             
-            // Save to Firebase and MongoDB independently
-            // saveEmotionToFirebase(initialEmotion);
-            saveEmotionToMongoDB(initialEmotion);
+            if (!ctx) return;
             
-            // Notify parent component if callback exists
-            if (onEmotionUpdate) {
-                onEmotionUpdate(initialEmotion);
-            }
+            // Draw current video frame to canvas
+            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
             
-            // Then occasionally update with different emotions to simulate real detection
-            const interval = setInterval(() => {
-                // Get next emotion from our predefined list
-                currentIndex = (currentIndex + 1) % emotions.length;
-                const nextEmotion = emotions[currentIndex];
+            // Convert canvas to base64 image
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Get current userId
+            const currentUserId = localStorage.getItem('userId') || userId;
+            
+            // Send to a new Flask API endpoint for emotion detection
+            const response = await fetch('http://localhost:5000/api/analyze-emotion-ml', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    image: imageData,
+                    userId: currentUserId
+                }),
+            });
+            
+            if (!response.ok) throw new Error('Failed to analyze emotion');
+            
+            const data = await response.json();
+            const newEmotion = data.emotion;
+            
+            // Only update if emotion has changed or is significant
+            if (newEmotion !== lastEmotionRef.current) {
+                lastEmotionRef.current = newEmotion;
                 
-                // Update local state
-                setExpression(nextEmotion);
+                // Update state
+                setExpression(newEmotion);
                 
-                // Save to Firebase and MongoDB independently
-                saveEmotionToFirebase(nextEmotion);
-                saveEmotionToMongoDB(nextEmotion);
+                // Save to both databases
+                saveEmotionToFirebase(newEmotion);
+                saveEmotionToMongoDB(newEmotion);
                 
                 // Notify parent component if callback exists
                 if (onEmotionUpdate) {
-                    onEmotionUpdate(nextEmotion);
+                    onEmotionUpdate(newEmotion);
                 }
                 
-                console.log("Emotion updated:", nextEmotion);
-            }, 3000); // Change emotion every 3 seconds
-
-            // Clear the emotion update interval when component unmounts
-            return () => clearInterval(interval);
-        }, 2000);
-
-        // Clear the initial timeout when component unmounts
-        return () => clearTimeout(initialTimeout);
-    }, [isWebcamActive, onEmotionUpdate]);
+                console.log("Emotion updated:", newEmotion);
+            }
+            
+        } catch (error) {
+            console.error("Error analyzing emotion:", error);
+        }
+    };
 
     // Function to analyze posture using the Flask backend
     const analyzePosture = async () => {
@@ -301,16 +321,22 @@ const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, on
         }
     };
     
-    // Start posture analysis when webcam is active
+    // Start analysis when webcam is active
     useEffect(() => {
         if (!isWebcamActive) return;
         
-        // Initial delay before starting posture analysis
+        // Initial delay before starting analysis
         const initialDelay = setTimeout(() => {
-            // First analysis
+            // First emotion analysis
+            analyzeEmotion();
+            
+            // Set up interval for repeated emotion analysis
+            emotionIntervalRef.current = setInterval(analyzeEmotion, 3000); // Every 3 seconds
+            
+            // First posture analysis
             analyzePosture();
             
-            // Set up interval for repeated analysis
+            // Set up interval for repeated posture analysis
             postureIntervalRef.current = setInterval(analyzePosture, 5000); // Every 5 seconds
         }, 3000); // Start after 3 seconds
         
@@ -320,6 +346,10 @@ const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, on
             if (postureIntervalRef.current) {
                 clearInterval(postureIntervalRef.current);
                 postureIntervalRef.current = null;
+            }
+            if (emotionIntervalRef.current) {
+                clearInterval(emotionIntervalRef.current);
+                emotionIntervalRef.current = null;
             }
         };
     }, [isWebcamActive]);
@@ -348,6 +378,10 @@ const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, on
                     className="rounded-lg shadow-lg"
                     style={{ maxWidth: "100%", height: "auto" }}
                 />
+                <canvas 
+                    ref={canvasRef} 
+                    style={{ display: 'none' }} 
+                />
                 {!isWebcamActive && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white">
                         Starting webcam...
@@ -362,7 +396,7 @@ const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, on
                         Facial Expression: <span className="font-bold text-[#6666FF]">{formatEmotion(expression)}</span>
                     </h3>
                     <p className="text-sm text-gray-400 mt-1">
-                        {!expression ? "Analyzing..." : "Detected based on facial analysis"}
+                        {!expression ? "Analyzing..." : "Detected using ML facial analysis"}
                     </p>
                 </div>
                 

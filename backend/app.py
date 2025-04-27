@@ -61,6 +61,90 @@ def detect_hand_raised(landmarks):
     
     return left_hand_raised or right_hand_raised
 
+
+
+
+@app.route('/api/analyze-emotion-ml', methods=['POST'])
+def analyze_emotion_ml():
+    try:
+        # Get image data from request
+        data = request.get_json()
+        image_data = data.get('image')
+        user_id = data.get('userId', 'guest_user')
+        
+        if not user_id:
+            return jsonify({'error': 'userId is required'}), 400
+        
+        # Process the base64 image
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]  # Remove the data:image/jpeg;base64, part
+        
+        # Decode base64 image
+        image_bytes = base64.b64decode(image_data)
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if frame is None:
+            return jsonify({'error': 'Failed to decode image'}), 400
+        
+        # Convert to grayscale for face detection
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # Load the face cascade for face detection
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        
+        # Detect faces
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5, minSize=(30, 30))
+        
+        # Default if no face detected
+        emotion = "neutral"
+        
+        # Process each detected face
+        for (x, y, w, h) in faces:
+            # Extract the face region
+            face_crop = frame[y:y+h, x:x+w]
+            
+            try:
+                # Analyze emotion using DeepFace
+                from deepface import DeepFace
+                result = DeepFace.analyze(face_crop, actions=['emotion'], enforce_detection=False)
+                emotion = result[0]['dominant_emotion']
+                break  # Just use the first face
+            except Exception as e:
+                print(f"Error analyzing face: {e}")
+        
+        # Store emotion in MongoDB
+        try:
+            # Get or initialize user emotion stats
+            emotion_stats = db.facial_expression_stats.find_one({'userId': user_id}) or {
+                'userId': user_id,
+                'emotions': {}
+            }
+
+            # Update emotion count
+            current_count = emotion_stats.get('emotions', {}).get(emotion, 0)
+            if 'emotions' not in emotion_stats:
+                emotion_stats['emotions'] = {}
+            emotion_stats['emotions'][emotion] = current_count + 1
+
+            # Save updated stats to MongoDB
+            db.facial_expression_stats.update_one(
+                {'userId': user_id},
+                {'$set': {'emotions': emotion_stats['emotions']}},
+                upsert=True
+            )
+        except Exception as e:
+            print(f"Error updating emotion stats: {e}")
+        
+        # Return the detected emotion
+        return jsonify({
+            'emotion': emotion,
+            'message': 'Emotion analyzed successfully'
+        })
+        
+    except Exception as e:
+        print(f"Error in emotion analysis: {e}")
+        return jsonify({'message': 'Server error', 'error': str(e)}), 500
 # Routes
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
