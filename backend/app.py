@@ -10,8 +10,10 @@ import tensorflow as tf
 import mediapipe as mp
 import base64
 import zipfile
-
-
+import time
+from datetime import datetime
+from collections import defaultdict
+tab_switches = defaultdict(list)  # userId -> list of tab switch events
 # Load environment variables
 load_dotenv()
 
@@ -34,7 +36,6 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 IMG_SIZE = (224, 224)
 CLASS_LABELS = ["Good Posture", "Bad Posture"]
-
 # Connect to MongoDB
 try:
     mongo_client = pymongo.MongoClient(os.getenv('MONGO_URI'))
@@ -61,8 +62,96 @@ def detect_hand_raised(landmarks):
     
     return left_hand_raised or right_hand_raised
 
+# Tab tracking starts here:
+# Add this to your app.py file
+# Required imports - add these if not already present
+import time
+from datetime import datetime
+from collections import defaultdict
 
+# In-memory storage for tab activity
+tab_switches = defaultdict(list)  # userId -> list of tab switch events
 
+@app.route('/api/track-tab-activity', methods=['POST'])
+def track_tab_activity():
+    try:
+        data = request.get_json()
+        user_id = data.get('userId')
+        status = data.get('status')  # 'hidden' or 'visible'
+        timestamp = data.get('timestamp') or int(time.time() * 1000)  # Client timestamp or server time
+        
+        if not user_id or not status:
+            return jsonify({'error': 'userId and status are required'}), 400
+        
+        # Validate status
+        if status not in ['hidden', 'visible']:
+            return jsonify({'error': 'status must be either "hidden" or "visible"'}), 400
+
+        # Create activity entry with formatted time
+        formatted_time = datetime.fromtimestamp(timestamp/1000).strftime('%H:%M:%S')
+        
+        activity = {
+            'status': status,
+            'timestamp': timestamp,
+            'formatted_time': formatted_time
+        }
+        
+        # Store in memory
+        tab_switches[user_id].append(activity)
+        
+        return jsonify({
+            'message': 'Tab activity tracked successfully',
+            'activity': activity
+        }), 200
+    
+    except Exception as e:
+        print(f"Error tracking tab activity: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/get-tab-activity', methods=['GET'])
+def get_tab_activity():
+    try:
+        user_id = request.args.get('userId')
+        
+        if not user_id:
+            return jsonify({'error': 'userId is required'}), 400
+        
+        # Get all tab activity for this user
+        activities = tab_switches.get(user_id, [])
+        
+        # Calculate metrics
+        hidden_count = sum(1 for act in activities if act['status'] == 'hidden')
+        
+        # Calculate time spent away (approximate)
+        time_away = 0
+        hidden_start = None
+        
+        for act in activities:
+            if act['status'] == 'hidden':
+                hidden_start = act['timestamp']
+            elif act['status'] == 'visible' and hidden_start is not None:
+                time_away += (act['timestamp'] - hidden_start) / 1000  # Convert to seconds
+                hidden_start = None
+        
+        # If the last status was 'hidden', count time until now
+        if hidden_start is not None:
+            time_away += (time.time() * 1000 - hidden_start) / 1000
+        
+        minutes = int(time_away // 60)
+        seconds = int(time_away % 60)
+        
+        return jsonify({
+            'activities': activities,
+            'metrics': {
+                'tabSwitchCount': hidden_count,
+                'timeAwaySeconds': round(time_away, 2),
+                'timeAwayFormatted': f"{minutes}m {seconds}s"
+            }
+        }), 200
+    
+    except Exception as e:
+        print(f"Error fetching tab activity: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/analyze-emotion-ml', methods=['POST'])
 def analyze_emotion_ml():

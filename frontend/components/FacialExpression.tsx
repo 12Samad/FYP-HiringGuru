@@ -3,6 +3,8 @@ import * as faceapi from "face-api.js";
 import { useEffect, useRef, useState } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, increment } from "firebase/firestore";
+// import TabTracker from "./TabTracker"; // Import TabTracker component
+import TabTracker from "./TabTracker";
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -364,6 +366,9 @@ const FacialExpression: React.FC<FacialExpressionProps> = ({ onEmotionUpdate, on
 
     return (
         <div className="flex flex-col items-center">
+            {/* Include TabTracker at the top of the component */}
+            {userId !== "guest_user" && <TabTracker userId={userId} />}
+            
             {/* Display current user ID for debugging - can be removed in production */}
             <div className="w-full p-2 mb-2 bg-slate-800 text-xs text-gray-400">
                 {/* User ID: {userId} */}
