@@ -13,6 +13,7 @@ import zipfile
 import time
 from datetime import datetime
 from collections import defaultdict
+from bson.objectid import ObjectId
 tab_switches = defaultdict(list)  # userId -> list of tab switch events
 # Load environment variables
 load_dotenv()
@@ -107,6 +108,119 @@ def track_tab_activity():
     except Exception as e:
         print(f"Error tracking tab activity: {e}")
         return jsonify({'error': str(e)}), 500
+    
+
+
+# Add this endpoint to your Flask app.py file
+@app.route('/api/generate-interview-report', methods=['GET'])
+def generate_interview_report():
+    try:
+        user_id = request.args.get('userId')
+        
+        if not user_id:
+            return jsonify({'error': 'userId is required'}), 400
+            
+        # Get user information
+        user = users_collection.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        report = {
+            'user': {
+                'name': user.get('name', 'Unknown'),
+                'email': user.get('email', 'Unknown')
+            },
+            'facial_expressions': {},
+            'posture': {},
+            'tab_activity': {},
+            'interviews': []
+        }
+        
+        # Get facial expression data
+        facial_data = db.facial_expression_stats.find_one({'userId': user_id})
+        if facial_data:
+            # Try to ensure facial expressions data is in a dictionary format
+            emotions = facial_data.get('emotions', {})
+
+            # If emotions data isn't in the expected dictionary format, attempt to handle it
+            if not isinstance(emotions, dict):
+                emotions = {}
+
+            report['facial_expressions'] = emotions
+            
+            # Calculate dominant emotion if data is available
+            if emotions:
+                dominant_emotion = max(emotions.items(), key=lambda x: x[1], default=("None", 0))
+                report['facial_expressions']['dominant'] = {
+                    'emotion': dominant_emotion[0],
+                    'count': dominant_emotion[1]
+                }
+
+                # Calculate percentages, ensuring all values are integers
+                total_emotions = sum(v for v in emotions.values() if isinstance(v, int))
+                if total_emotions > 0:
+                    report['facial_expressions']['percentages'] = {
+                        emotion: round((count / total_emotions) * 100, 2) 
+                        for emotion, count in emotions.items() if isinstance(count, int)
+                    }
+                else:
+                    report['facial_expressions']['percentages'] = {}
+        else:
+            report['facial_expressions'] = {'message': 'No facial expression data available'}
+        
+        # Get posture data
+        posture_data = posture_collection.find_one({'userId': user_id})
+        if posture_data:
+            report['posture'] = {
+                'good_count': posture_data.get('good_posture_count', 0),
+                'bad_count': posture_data.get('bad_posture_count', 0),
+                'good_percentage': posture_data.get('good_posture_percentage', 0),
+                'bad_percentage': posture_data.get('bad_posture_percentage', 0),
+                'total_frames': posture_data.get('total_frames', 0)
+            }
+        
+        # Get tab activity data
+        activities = tab_switches.get(user_id, [])
+        hidden_count = sum(1 for act in activities if act['status'] == 'hidden')
+        
+        # Calculate time spent away
+        time_away = 0
+        hidden_start = None
+        
+        for act in activities:
+            if act['status'] == 'hidden':
+                hidden_start = act['timestamp']
+            elif act['status'] == 'visible' and hidden_start is not None:
+                time_away += (act['timestamp'] - hidden_start) / 1000  # Convert to seconds
+                hidden_start = None
+        
+        # If the last status was 'hidden', count time until now
+        if hidden_start is not None:
+            time_away += (time.time() * 1000 - hidden_start) / 1000
+            
+        minutes = int(time_away // 60)
+        seconds = int(time_away % 60)
+        
+        report['tab_activity'] = {
+            'switch_count': hidden_count,
+            'time_away_seconds': round(time_away, 2),
+            'time_away_formatted': f"{minutes}m {seconds}s"
+        }
+        
+        # Get interview data from Firestore (if available)
+        # Currently using a placeholder message
+        report['interviews'] = []
+        
+        # Return the complete report
+        return jsonify({
+            'message': 'Interview report generated successfully',
+            'report': report
+        }), 200
+    
+    except Exception as e:
+        print(f"Error generating interview report: {e}")
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+
 
 @app.route('/api/get-tab-activity', methods=['GET'])
 def get_tab_activity():

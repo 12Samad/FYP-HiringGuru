@@ -5,7 +5,7 @@ import type React from "react"
 import { getFirestore, doc, setDoc, type Firestore } from "firebase/firestore"
 import { getApps } from "firebase/app"
 import { useRouter } from "next/navigation"
-
+import InterviewReport from "./InterviewReport"
 // Groq API Configuration - consistent across the application
 const GROQ_API_KEY = "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"
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -41,6 +41,8 @@ const Interview: React.FC<InterviewProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [currentTranscript, setCurrentTranscript] = useState("")
+  const [showReport, setShowReport] = useState(false)
+
 
   // Store the actual number of questions to use
   const [actualQuestionCount, setActualQuestionCount] = useState(5)
@@ -842,33 +844,55 @@ if (isFinal) {
   if (interviewComplete) {
     return (
       <div className="text-center bg-[#1A1A1A] p-6 rounded-lg text-white">
-        <h3 className="text-xl font-bold mb-4 text-[#6666FF]">Interview Complete!</h3>
-        <p className="mb-6 text-gray-300">Thank you for completing the interview. Your responses have been saved.</p>
-  
-        <div className="bg-[#222222] p-4 rounded-lg mb-6">
-          <h4 className="font-semibold mb-2 text-white">Your Responses:</h4>
-          {Object.entries(responses).map(([question, answer], index) => (
-            <div key={index} className="mb-4 text-left">
-              <p className="font-medium text-[#6666FF]">Q: {question}</p>
-              <p className="text-gray-300">A: {answer}</p>
+        {showReport ? (
+          // Show the report component when showReport is true
+          <div>
+            <InterviewReport userId={localStorage.getItem("userId") || "guest_user"} />
+            <button
+              onClick={() => setShowReport(false)}
+              className="mt-4 bg-gray-700 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-200"
+            >
+              Back to Interview Results
+            </button>
+          </div>
+        ) : (
+          // Show the normal interview complete screen when showReport is false
+          <>
+            <h3 className="text-xl font-bold mb-4 text-[#6666FF]">Interview Complete!</h3>
+            <p className="mb-6 text-gray-300">Thank you for completing the interview. Your responses have been saved.</p>
+      
+            <div className="bg-[#222222] p-4 rounded-lg mb-6">
+              <h4 className="font-semibold mb-2 text-white">Your Responses:</h4>
+              {Object.entries(responses).map(([questionIndex, answer], index) => (
+                <div key={index} className="mb-4 text-left">
+                  <p className="font-medium text-[#6666FF]">Q: {questions[parseInt(questionIndex)]}</p>
+                  <p className="text-gray-300">A: {answer}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-  
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={() => router.push("/")}
-            className="bg-[#6666FF] text-white py-2 px-4 rounded-md hover:bg-[#5555DD] transition duration-200"
-          >
-            Return to Dashboard
-          </button>
-          <button
-            onClick={resetInterview}
-            className="bg-transparent border border-[#6666FF] text-[#6666FF] py-2 px-4 rounded-md hover:bg-[#6666FF]/10 transition duration-200"
-          >
-            New Interview
-          </button>
-        </div>
+      
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => router.push("/")}
+                className="bg-[#6666FF] text-white py-2 px-4 rounded-md hover:bg-[#5555DD] transition duration-200"
+              >
+                Return to Dashboard
+              </button>
+              <button
+                onClick={() => setShowReport(true)}
+                className="bg-[#444444] text-white py-2 px-4 rounded-md hover:bg-[#555555] transition duration-200"
+              >
+                Generate Report
+              </button>
+              <button
+                onClick={resetInterview}
+                className="bg-transparent border border-[#6666FF] text-[#6666FF] py-2 px-4 rounded-md hover:bg-[#6666FF]/10 transition duration-200"
+              >
+                New Interview
+              </button>
+            </div>
+          </>
+        )}
       </div>
     )
   }
