@@ -177,7 +177,7 @@ const Interview: React.FC<InterviewProps> = ({
     setError("")
 
     // Determine number of questions based on props
-    const numQuestions = Math.max(3, Number.parseInt(numberOfQuestions) || 5)
+    const numQuestions = Math.max(3, Number.parseInt(numberOfQuestions) || 3)
     setActualQuestionCount(numQuestions)
     console.log(`Attempting to generate ${numQuestions} questions`)
 

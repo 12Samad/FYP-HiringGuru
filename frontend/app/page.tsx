@@ -6,37 +6,53 @@ import Team from "@/components/team";
 import PostureDetection from "@/components/PostureDetection"; 
 // import Interview from "@/components/Interview"; // Import the Interview component
 
+// New components for the updated landing page
+import ProblemSection from "@/components/ProblemSection";
+import SolutionSection from "@/components/SolutionSection";
+import SocialProof from "@/components/SocialProof";
+import HowItWorks from "@/components/HowItWorks";
+import WaitlistForm from "@/components/WaitlistForm";
+import FAQ from "@/components/FAQ";
+import CTASection from "@/components/CTASection";
+
 export default function Home() {
   return (
     <main>
+      {/* Original Hero - Keep as project identity */}
       <Hero />
+      
+      {/* Original Testimonials */}
       <Testimonials />
+      
+      {/* New Problem Section - Explains what's broken with current hiring */}
+      <ProblemSection />
+      
+      {/* New Solution Section - How HiringGuru fixes the problems */}
+      <SolutionSection />
+      
+      {/* Original Trusted Section */}
       <TrustedSection />
+      
+      {/* New Social Proof - Credibility with HR leaders */}
+      <SocialProof />
+      
+      {/* New How It Works - 4 step process */}
+      <HowItWorks />
+      
+      {/* Original Choose Us section */}
       <ChooseUs />
+      
+      {/* New Waitlist Form - Main conversion point */}
+      <WaitlistForm />
+      
+      {/* New FAQ Section */}
+      <FAQ />
+      
+      {/* Original Team section */}
       <Team />
-
-
-      {/* Posture Detection Section */}
-      {/* <section>
-        <h1>Posture Detection</h1>
-        <PostureDetection />
-      </section> */}
-
-      {/* Interview Section */}
-      {/* <section className="py-12 bg-gray-100">
-        <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold text-center mb-8">AI Interview Practice</h1>
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
-            <p className="text-gray-600 mb-6 text-center">
-              Practice your interview skills with our AI interviewer. 
-              The system will ask you questions and record your responses.
-            </p>
-            <div className="interview-container">
-              {/* <Interview /> */}
-            {/* </div> */}
-          {/* </div>
-        </div>
-      // </section> */} 
+      
+      {/* Final Call to Action */}
+      <CTASection />
     </main>
   );
 }

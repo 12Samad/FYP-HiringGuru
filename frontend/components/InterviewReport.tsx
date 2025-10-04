@@ -4,6 +4,10 @@ import { useState, useEffect } from "react"
 import type React from "react"
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts"
 
+// Add the Groq API configuration constants at the top of the file, after the imports
+const GROQ_API_KEY = "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"
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+
 // Define types for the report data structure
 interface Emotions {
   [key: string]: number
@@ -48,6 +52,11 @@ const InterviewReport: React.FC<InterviewReportProps> = ({ userId }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
 
+  // Add a new state variable for AI recommendations in the InterviewReport component
+  const [aiRecommendations, setAiRecommendations] = useState<string[]>([])
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState<boolean>(false)
+  const [recommendationsError, setRecommendationsError] = useState<string>("")
+
   useEffect(() => {
     fetchReport()
   }, [userId])
@@ -74,6 +83,156 @@ const InterviewReport: React.FC<InterviewReportProps> = ({ userId }) => {
       setIsLoading(false)
     }
   }
+
+  // Add a new function to generate AI recommendations after the fetchReport function
+  const generateAIRecommendations = async (reportData: ReportData) => {
+    setIsLoadingRecommendations(true)
+    setRecommendationsError("")
+
+    try {
+      console.log("Generating AI recommendations based on report data")
+
+      // Create a detailed prompt with the report data
+      const systemMessage = `You are an AI assistant specialized in analyzing interview performance data and providing personalized recommendations.
+                            Format your response as a numbered list of 3-5 specific, actionable recommendations.
+                            Each recommendation should be on a new line and should directly address the candidate's performance.
+                            Do not include any additional text or explanations.`
+
+      // Construct a detailed prompt with all the report data
+      let userMessage =
+        "Based on the following interview performance data, provide specific recommendations for improvement:\n\n"
+
+      // Add facial expression data
+      if (reportData.facial_expressions) {
+        userMessage += "FACIAL EXPRESSIONS:\n"
+        if (reportData.facial_expressions.emotions) {
+          userMessage +=
+            "Emotions detected: " +
+            Object.entries(reportData.facial_expressions.emotions)
+              .map(([emotion, count]) => `${emotion} (${count} times)`)
+              .join(", ") +
+            "\n"
+        }
+        if (reportData.facial_expressions.dominant) {
+          userMessage += `Dominant emotion: ${reportData.facial_expressions.dominant.emotion} (${reportData.facial_expressions.dominant.count} times)\n`
+        }
+        if (reportData.facial_expressions.percentages) {
+          userMessage +=
+            "Emotion percentages: " +
+            Object.entries(reportData.facial_expressions.percentages)
+              .map(([emotion, percentage]) => `${emotion} (${percentage}%)`)
+              .join(", ") +
+            "\n"
+        }
+        userMessage += "\n"
+      }
+
+      // Add posture data
+      if (reportData.posture) {
+        userMessage += "POSTURE ANALYSIS:\n"
+        userMessage += `Good posture: ${reportData.posture.good_percentage}% (${reportData.posture.good_count} frames)\n`
+        userMessage += `Bad posture: ${reportData.posture.bad_percentage}% (${reportData.posture.bad_count} frames)\n`
+        userMessage += `Total frames analyzed: ${reportData.posture.total_frames}\n\n`
+      }
+
+      // Add tab activity data
+      if (reportData.tab_activity) {
+        userMessage += "ATTENTION TRACKING:\n"
+        userMessage += `Tab switches: ${reportData.tab_activity.switch_count} times\n`
+        userMessage += `Time away: ${reportData.tab_activity.time_away_formatted}\n\n`
+      }
+
+      userMessage +=
+        "Provide specific, actionable recommendations that will help the candidate improve their interview performance."
+
+      // Request body for Groq API
+      const requestBody = {
+        model: "llama3-8b-8192",
+        messages: [
+          { role: "system", content: systemMessage },
+          { role: "user", content: userMessage },
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+      }
+
+      console.log("Sending request to Groq API for recommendations")
+
+      const response = await fetch(GROQ_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("API Error:", response.status, errorText)
+        throw new Error(`API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log("API Response received for recommendations")
+
+      // Handle Groq API response format with careful null checks
+      if (
+        !data ||
+        !data.choices ||
+        !data.choices.length ||
+        !data.choices[0] ||
+        !data.choices[0].message ||
+        !data.choices[0].message.content
+      ) {
+        console.error("Invalid response structure from API")
+        throw new Error("Invalid response structure from API")
+      }
+
+      // Parse the content of the message
+      const content = data.choices[0].message.content
+      console.log("Raw content received from API for recommendations")
+
+      // Extract recommendations using regex to handle different numbering formats
+      const lines = content
+        .split("\n")
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0)
+
+      // Process each line to remove numbering
+      const recommendationsArray = lines
+        .filter((line: string) => /^\d+[.)]\s+/.test(line) || line.length > 15) // Only keep lines that look like recommendations
+        .map((line: string) => line.replace(/^\d+[.)\s]+/, "").trim()) // Remove numbering
+        .filter((line: string) => line.length > 0)
+
+      console.log("Extracted recommendations:", recommendationsArray.length)
+
+      if (recommendationsArray.length === 0) {
+        // If no recommendations were extracted, use the raw content
+        setAiRecommendations([content])
+      } else {
+        setAiRecommendations(recommendationsArray)
+      }
+
+      setIsLoadingRecommendations(false)
+    } catch (error) {
+      console.error("Error generating AI recommendations:", error)
+      setRecommendationsError("Failed to generate AI recommendations. Using default recommendations instead.")
+      setIsLoadingRecommendations(false)
+    }
+  }
+
+  // Modify the useEffect hook that calls fetchReport to also call generateAIRecommendations after fetching the report
+  useEffect(() => {
+    fetchReport()
+  }, [userId])
+
+  // Add a new useEffect hook to generate recommendations when report data is available
+  useEffect(() => {
+    if (report) {
+      generateAIRecommendations(report)
+    }
+  }, [report])
 
   const handleExportToPDF = () => {
     // Don't proceed if report is null
@@ -577,27 +736,41 @@ const InterviewReport: React.FC<InterviewReportProps> = ({ userId }) => {
           </div>
           <div class="section-content">
             <div class="recommendations">
-              <div class="recommendation-item">
-                ${
-                  report.facial_expressions?.emotions
-                    ? `Try to maintain more <span class="highlight">${(report.facial_expressions.emotions.happy || 0) > (report.facial_expressions.emotions.neutral || 0) ? "neutral" : "positive"}</span> expressions during interviews.`
-                    : "Work on maintaining positive facial expressions during interviews."
-                }
-              </div>
-              <div class="recommendation-item">
-                ${
-                  report.posture?.good_percentage !== undefined && report.posture.good_percentage > 70
-                    ? "Continue maintaining your <span class='highlight'>excellent posture</span> throughout interviews."
-                    : "Focus on <span class='highlight'>improving your posture</span> by sitting up straight and avoiding slouching."
-                }
-              </div>
-              <div class="recommendation-item">
-                ${
-                  report.tab_activity?.switch_count === 0
-                    ? "<span class='highlight'>Excellent job</span> maintaining focus throughout the interview."
-                    : "Avoid <span class='highlight'>switching tabs</span> or looking away during video interviews to show your full attention."
-                }
-              </div>
+              ${
+                aiRecommendations.length > 0
+                  ? aiRecommendations
+                      .map(
+                        (recommendation) => `
+                  <div class="recommendation-item">
+                    ${recommendation}
+                  </div>
+                `,
+                      )
+                      .join("")
+                  : `
+                <div class="recommendation-item">
+                  ${
+                    report.facial_expressions?.emotions
+                      ? `Try to maintain more <span class="highlight">${(report.facial_expressions.emotions.happy || 0) > (report.facial_expressions.emotions.neutral || 0) ? "neutral" : "positive"}</span> expressions during interviews.`
+                      : "Work on maintaining positive facial expressions during interviews."
+                  }
+                </div>
+                <div class="recommendation-item">
+                  ${
+                    report.posture?.good_percentage !== undefined && report.posture.good_percentage > 70
+                      ? "Continue maintaining your <span class='highlight'>excellent posture</span> throughout interviews."
+                      : "Focus on <span class='highlight'>improving your posture</span> by sitting up straight and avoiding slouching."
+                  }
+                </div>
+                <div class="recommendation-item">
+                  ${
+                    report.tab_activity?.switch_count === 0
+                      ? "<span class='highlight'>Excellent job</span> maintaining focus throughout the interview."
+                      : "Avoid <span class='highlight'>switching tabs</span> or looking away during video interviews to show your full attention."
+                  }
+                </div>
+              `
+              }
             </div>
           </div>
         </div>
@@ -935,27 +1108,44 @@ const InterviewReport: React.FC<InterviewReportProps> = ({ userId }) => {
         )}
       </div>
 
-      {/* Basic recommendations */}
+      {/* AI Recommendations Section */}
       <div className="bg-[#222222] p-4 rounded-lg mb-6">
-        <h3 className="font-bold text-[#6666FF] mb-2">Recommendations</h3>
+        <h3 className="font-bold text-[#6666FF] mb-2">AI Recommendations</h3>
 
-        <ul className="list-disc list-inside text-gray-300 space-y-2">
-          <li>
-            {report.facial_expressions?.emotions
-              ? `Try to maintain more ${report.facial_expressions.emotions.happy > (report.facial_expressions.emotions.neutral || 0) ? "neutral" : "positive"} expressions during interviews.`
-              : "Work on maintaining positive facial expressions during interviews."}
-          </li>
-          <li>
-            {report.posture?.good_percentage && report.posture.good_percentage > 70
-              ? "Continue maintaining your excellent posture throughout interviews."
-              : "Focus on improving your posture by sitting up straight and avoiding slouching."}
-          </li>
-          <li>
-            {report.tab_activity?.switch_count === 0
-              ? "Excellent job maintaining focus throughout the interview."
-              : "Avoid switching tabs or looking away during video interviews to show your full attention."}
-          </li>
-        </ul>
+        {isLoadingRecommendations ? (
+          <div className="text-center py-4">
+            <p className="text-gray-400">Generating personalized recommendations...</p>
+          </div>
+        ) : recommendationsError ? (
+          <div>
+            <p className="text-red-500 mb-2">{recommendationsError}</p>
+            <ul className="list-disc list-inside text-gray-300 space-y-2">
+              <li>
+                {report.facial_expressions?.emotions
+                  ? `Try to maintain more ${report.facial_expressions.emotions.happy > (report.facial_expressions.emotions.neutral || 0) ? "neutral" : "positive"} expressions during interviews.`
+                  : "Work on maintaining positive facial expressions during interviews."}
+              </li>
+              <li>
+                {report.posture?.good_percentage && report.posture.good_percentage > 70
+                  ? "Continue maintaining your excellent posture throughout interviews."
+                  : "Focus on improving your posture by sitting up straight and avoiding slouching."}
+              </li>
+              <li>
+                {report.tab_activity?.switch_count === 0
+                  ? "Excellent job maintaining focus throughout the interview."
+                  : "Avoid switching tabs or looking away during video interviews to show your full attention."}
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <ul className="list-disc list-inside text-gray-300 space-y-2">
+            {aiRecommendations.map((recommendation, index) => (
+              <li key={index} className="leading-relaxed">
+                {recommendation}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* CHARTS SECTION - Added below existing content */}
